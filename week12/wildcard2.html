@@ -1,0 +1,88 @@
+<script>
+
+/**
+* 完成带问号的KMP
+*/
+
+function find(match, pattern){
+    let starCount = 0;
+    for (let i of pattern) {
+        if (i === "*"){
+            starCount ++
+        }
+    }
+
+    if (starCount === 0)  // 无start清空
+        return findPath(match, pattern)
+    
+    let i = 0; // 这个跟着pattern走
+    let lastIndex = 0; //这个跟着match走
+
+    /**
+    * 不跟老师一样分头部、中间、处理；直接放在一起处理
+    */
+    for (let j = 0; j < starCount + 1; j++ ){
+        let subPattern = "";
+        while(pattern[i] !== "*" && i !== pattern.length){
+            // debugger
+            subPattern += pattern[i]
+            i++
+        }
+        i++
+        // debugger
+        const regEx = new RegExp(subPattern.replace(/\?/g, "[\\s\\S]"), "g")
+        regEx.lastIndex = lastIndex;
+        let matchPart = regEx.exec(match)
+        // console.log(matchPart)
+
+        if (!matchPart) return false
+        lastIndex = regEx.lastIndex 
+    }
+    return true
+}
+
+/**
+* 匹配问号的KMP
+* 做table的时候，问号直接通过，k++
+* 匹配的时候，有问号即通过
+*/
+function findPath(source, pattern) {
+    let table = [0, 0];
+    let k = 0;
+    for (let i = 1; i < pattern.length - 1; i++) {
+        // debugger
+        if (pattern[i] === pattern[k] || pattern[i] === "?") {
+            k++;
+        } else {
+            k = 0;
+        }
+        table.push(k);
+    }
+    console.log(table)
+
+    let j = 0;
+    for (let i = 0; i < source.length; i++) {
+        console.log(pattern[j], source[i])
+        // debugger
+        // cpon
+        if (pattern[j] === source[i]  || pattern[j] === "?") {
+            j++;
+        } else {
+            while (j > 0) {
+                j = table[j];
+                if (pattern[j] === source[i] || pattern[j] === "?") {
+                    j++;
+                    break;
+                }
+            }
+        }
+        if (j >= pattern.length) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+</script>

@@ -1,4 +1,13 @@
 <script>
+
+/**
+* 这里做了括号匹配
+* 方法是做了一个新的type：parentheseExpression,
+* parenthese是比multiplicativeExpression还要第一级的类型
+* 但是parenthese里面的children属性会跑一次expression(source)
+*/
+
+
 const input = `
 function foo(x,y){
     return 3 + y;
