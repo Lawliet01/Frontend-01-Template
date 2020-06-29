@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+
+    .container {
+        /* margin-top: 1000px; */
+        display: flex;
+        flex-flow: wrap;
+        width: 1000px;
+    }
+
+    .cell {
+        width: 10px;
+        height: 10px;
+        box-sizing: border-box;
+        border: 1px solid grey;
+        /* background-color: grey; */
+    }
+
+    .cover {
+        background-color: blue;
+    }
+</style>
+<body>
+    <div class="container">
+        
+    </div>
+    <button onclick="remove()">清空</button>
+</body>
+<script>
+
+    class Sorted {
+        constructor(endPoint){
+            this.data = [];
+            this.endPoint = endPoint;
+        }
+        push(input){
+            this.data.push(input)
+        }
+        take(){
+            let minIndex = 0;
+            let minLength;
+            let minPoint;
+            for (let i = 0; i< this.data.length; i++){
+                const [x, y] = this.data[i];
+                const length = (this.endPoint[0] - x)**2 + (this.endPoint[1] - y)**2;
+                if (minLength === undefined || minLength > length) {
+                    minLength = length
+                    minIndex = i
+                    minPoint = [x, y]
+                } 
+            }
+            this.data[minIndex] = this.data[0];
+            this.data.shift()
+            return minPoint
+        }
+        get length(){
+            return this.data.length
+        }
+    }
+
+    /**
+    * 数据初始化
+    */
+    const storageMap = localStorage.getItem("roadMap")
+    let map;
+    if (storageMap) {
+        map = JSON.parse(storageMap)
+    } else {
+        map = new Array(10000).fill(0)
+    }
+    
+
+    for (let y = 0; y < 100; y++){
+        for (let x = 0; x< 100; x++){
+            const cell = document.createElement("div")
+            cell.classList.add("cell")
+            cell.dataset.cellId = x + y*100;
+            document.body.children[0].appendChild(cell)
+            if (map[y*100+x] === 1) {
+                cell.classList.add("cover")
+            } else if (map[y * 100 + x] !== 0) {
+                map[y * 100 + x] = 0
+            }
+        }
+    }
+    const container = document.getElementsByClassName("container")[0];
+
+
+    window.addEventListener("contextmenu",(event)=>{
+        event.preventDefault()
+    })
+
+
+    /**
+    * 不在每个cell上面添加事件，否则要加10000个事件
+    */
+    container.addEventListener("mousedown", () => {
+        // 点击的时候要调用一次
+        cover()
+        window.addEventListener("mousemove", cover)
+        window.addEventListener("mouseup", end)
+
+        function cover(button){ 
+            /**
+            * 两种定位elemnt的方法
+            */
+
+            // 方法1 通过data attribute来定位element
+            const cellId = event.target.dataset.cellId
+            if(event.buttons === 1) {
+                map[cellId] = 1
+                container.children[cellId].classList.add("cover")
+            } else {
+                map[cellId] = 0;
+                container.children[cellId].classList.remove("cover")
+            }
+
+            // 方法2 通过坐标定位
+            // const {x: containerLeft, y: containerTop} = container.getBoundingClientRect();
+            // const mouseX = event.clientX - containerLeft;
+            // const mouseY = event.clientY - containerTop;
+            // if (mouseX <= 0 || mouseX >= 1000 || mouseY <= 0 || mouseY >= 1000) return;
+            // const targetElementIndex = Math.floor(mouseX / 10) + Math.floor(mouseY / 10) * 100
+            // if (event.buttons === 1) { //添加
+            //     map[targetElementIndex] = 1;
+            //     container.children[targetElementIndex].classList.add("cover")
+            // } else if (event.buttons === 2) { //取消
+            //     map[targetElementIndex] = 0;
+            //     container.children[targetElementIndex].classList.remove("cover")
+            // }
+        }
+
+        function end(){
+            localStorage.setItem("roadMap",JSON.stringify(map))
+            window.removeEventListener("mousemove", cover);
+            window.removeEventListener("mouseup", end)
+        }
+    })
+
+    /**
+    * 清空函数
+    */
+    function remove(){
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                const index = y * 100 + x;
+                if (map[index] !== 0) {
+                    map[index] = 0;
+                    container.children[index].classList.remove("cover")
+                }
+            }
+        }
+        localStorage.removeItem("roadMap");
+        map = new Array(10000).fill(0);
+    }
+
+    /**
+    * 寻路
+    */
+
+    function sleep(time){
+        return new Promise(resolve=>{
+            setTimeout(()=>{
+                resolve()
+            }, time)
+        })
+    }
+
+    async function findPath(map, start, end) {
+        // const path = []; // 广度和深度搜索使用
+        const path = new Sorted(end) // A*搜索使用
+        let done = false; // 是否完成的flag
+        insert(start, start)
+        path.push(start)
+        while(path.length > 0) {
+            const current = path.take()   // A*搜索使用
+            // const current = path.shift() //广度搜索
+            // const current = path.pop() //深度搜索
+            const [x,y] = current;
+
+            if (done) {
+                console.log('done')
+                return;
+            } 
+
+            await insert([x-1,y], current);
+            await insert([x, y-1], current)
+            await insert([x+1,y], current);
+            await insert([x, y+1], current);
+            await insert([x+1, y - 1], current);
+            await insert([x+1, y + 1], current)
+            await insert([x - 1, y + 1], current);
+            await insert([x - 1, y - 1], current);
+        }
+        
+
+        async function insert(point, pre) {
+            const [x, y] = point
+            const index = x + 100 * y
+            // 判断条件
+            if (map[index] !== 0) return;
+            if (x< 0 || x> 99 || y < 0 || y>99) return;
+            if (map[point[0] + pre[1]* 100] !== 0 && map[point[1]*100 + pre[0]] !==0)  return; //卡住斜跳
+            
+            // 画颜色
+            map[index] = pre;
+            container.children[index].style.backgroundColor = "red";
+
+            // 如果已经到达终点， 画path
+            if (x === end[0] && y === end[1] ) { 
+                done = true;
+                let currentPathPoint = point;
+                container.children[currentPathPoint[0] + currentPathPoint[1] * 100].style.backgroundColor = "green";
+                do {
+                    const [preX, preY] = map[currentPathPoint[0] + currentPathPoint[1]*100]
+                    container.children[preX + preY*100].style.backgroundColor = "green";
+                    currentPathPoint = [preX, preY]
+                    await sleep(10)
+                } while(currentPathPoint[0] !== start[0] || currentPathPoint[1] !== start[1])
+            }
+            path.push(point)
+            await sleep(10)
+        }
+    }
+</script>
+</html>
