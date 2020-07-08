@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    .color-box {
+        width: 300px;
+        height: 300px;
+        border: 1px solid black;
+    }
+</style>
+<body>
+    <input type="range" min="0" max="255" id="red" value="0"oninput="color.red=value">
+    <input type="range" min="0" max="255" id="green"  value="0" oninput="color.green=value">
+    <input type="range" min="0" max="255" id="blue" value="0"  oninput="color.blue=value">
+    <div class="color-box">
+
+    </div>
+</body>
+<script>
+    // debugger
+    let handlers = new Map()
+    let reactivities = new Map()
+    let usedReactivities = []
+
+    function effect(handler){
+        usedReactivities = []
+        handler()
+        for (let usedReactivity of usedReactivities){
+            let {target, prop} = usedReactivity ;
+            if (! handlers.get(target))
+                handlers.set(target, new Map())
+            if (! handlers.get(target).get(prop)) 
+                handlers.get(target).set(prop, [])
+            handlers.get(target).get(prop).push(handler)
+        }
+    }
+
+
+    function addReactive(obj){
+        if (reactivities.get(obj)) {
+            return reactivities.get(obj)
+        } else {
+            const proxy = new Proxy(obj, {
+                get(target, prop){
+                    /**
+                    * 在get的时候做依赖收集
+                    */
+                    usedReactivities.push({target, prop})
+                    let val = target[prop];
+                    if (typeof val === "object"){
+                        // o.b.x 先调用b属性的get，然后给x调用了reactive，然后再调用x的get，最终返回x的值。
+                        return addReactive(val)
+                    }
+                    return val
+                },
+                set(target, prop, val){
+                    target[prop] = val;
+                    if (handlers.get(target) && handlers.get(target).get(prop)){
+                        for (let handler of handlers.get(target).get(prop)){
+                            handler()
+                        }
+                    }
+                    return target[prop]
+                }
+            })
+            reactivities.set(obj, proxy)
+            return proxy
+        }
+    }
+
+    // let red = 0;
+    // let green = 0;
+    // let blue = 0;
+
+    let color = addReactive({
+        red: 0,
+        green: 0,
+        blue: 0,
+    })
+    // let redBar = document.getElementById("red")
+    // let greenBar = document.getElementById("green")
+    // let blueBar = document.getElementById("blue")
+    let colorBox = document.getElementsByClassName("color-box")[0]
+
+
+
+    effect(() => {colorBox.style.backgroundColor = `rgb(${color.red},${color.green},${color.blue})`})
+    // effect(() => {dummy = o.b.x})
+    // effect(() => {dummy = o.b.x})
+    // debugger
+    // console.log(dummy)
+
+    // o.b.x = 3
+    // console.log(dummy)
+
+
+</script>
+</html>

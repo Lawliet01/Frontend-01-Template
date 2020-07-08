@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    body {
+        padding: 0;
+        margin: 0;
+    }
+
+    .drag-box {
+        width: 100px;
+        height: 100px;
+        background-color: greenyellow;
+        display: inline-block;
+    }
+</style>
+<body>
+    <div class="text">插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去
+插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去
+插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去
+插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去
+插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去
+插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去插进去</div>
+    <div class="drag-box">
+
+    </div>
+</body>
+<script>
+    const box = document.getElementsByClassName("drag-box")[0]
+
+    box.addEventListener("mousedown",()=>{
+
+        // const {x: boxX, y:boxY} = box.getBoundingClientRect()
+        const startX = event.clientX
+        const startY = event.clientY
+
+        window.addEventListener("mousemove", move)
+        window.addEventListener("mouseup",end)
+
+        function move(){
+            event.preventDefault()
+            const {clientX: x, clientY: y} = event
+            const range = nestest({x,y})
+            range.insertNode(box)
+
+            // box.style.transform = `translate(${x -  startX}px,${y - startY}px)`
+            // console.log(x, y)
+            // console.log(event.clientX)
+        }
+
+        function end(){
+            window.removeEventListener("mousemove", move)
+            window.removeEventListener("mouseup", end)
+        }
+    })
+
+    let textGroup = document.getElementsByClassName("text")[0]
+    // const range = document.createRange()
+    // range.setStart(textGroup.firstChild,1)
+    // range.setEnd(textGroup.firstChild,2)
+
+    let ranges = []
+
+    for (let i = 0; i<textGroup.textContent.length -3; i+=3) {
+        let range = document.createRange()
+        range.setStart(textGroup.firstChild, i)
+        range.setEnd(textGroup.firstChild, i+3)
+        ranges.push(range)
+    }
+
+    function distance(pos1, pos2) {
+        
+        return (pos1.x - pos2.x)**2 + (pos1.y - pos2.y)**2
+    }
+
+    function nestest(boxPos){
+        let minDistance = Infinity
+        let selectRange = null
+
+        for (let range of ranges){
+            const {x, y} = range.getBoundingClientRect()
+            const targetDistance = distance(boxPos, {x, y});
+            // console.log(targetDistance);
+            // debugger
+            if (targetDistance < minDistance) {
+                minDistance= targetDistance
+                selectRange = range
+            }
+        }   
+        return selectRange
+    }
+
+</script>
+</html>
